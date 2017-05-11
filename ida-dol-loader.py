@@ -6,46 +6,21 @@ from ctypes import *
 
 DolHeaderSize = 0x100
 DolFormatName = "Nintendo GC/WII DOL"
+MaxCodeSection = 7
+MaxDataSection = 11
 
 class DolHeader(BigEndianStructure):
     _fields_ = [
-            ("text_offsets", c_uint * 7),
-            ("data_offsets", c_uint * 11),
-            ("text_addresses", c_uint * 7),
-            ("data_addresses", c_uint * 11),
-            ("text_sizes", c_uint * 7),
-            ("data_sizes", c_uint * 11),
+            ("text_offsets", c_uint * MaxCodeSection),
+            ("data_offsets", c_uint * MaxDataSection),
+            ("text_addresses", c_uint * MaxCodeSection),
+            ("data_addresses", c_uint * MaxDataSection),
+            ("text_sizes", c_uint * MaxCodeSection),
+            ("data_sizes", c_uint * MaxDataSection),
             ("bss_address", c_uint),
             ("bss_size", c_uint),
             ("entry_point", c_uint),
             ]
-
-    def __str__(self):
-        ret = "Text sections:\nOffset   | Address  |  Size\n"
-        for x in xrange(7):
-            if self.text_sizes[x] == 0:
-                continue
-
-            ret += "{:08x} | {:08x} | {:08x}\n".format(
-                    self.text_offsets[x],
-                    self.text_addresses[x],
-                    self.text_sizes[x])
-
-        ret += "\nData sections:\nOffset   | Address  |  Size\n"
-        for x in xrange(7):
-            if self.data_sizes[x] == 0:
-                continue
-
-            ret += "{:08x} | {:08x} | {:08x}\n".format(
-                    self.data_offsets[x],
-                    self.data_addresses[x],
-                    self.data_sizes[x])
-
-        ret += "\nBSS at {:08x} of size {:08x}".format(self.bss_address, self.bss_size)
-        ret += "\nEntry point at {:08x}".format(self.entry_point)
-
-
-        return ret
 
 def get_dol_header(li):
     li.seek(0)
@@ -62,9 +37,7 @@ def section_sanity_check(offset, addr, size, file_len):
     if addr and (addr & 0x80000000 == 0):
         return False
 
-    return 1
-
-
+    return True
 
 def accept_file(li, n):
 
@@ -81,7 +54,7 @@ def accept_file(li, n):
 
     header = get_dol_header(li)
 
-    for i in xrange(7):
+    for i in xrange(MaxCodeSection):
         if not section_sanity_check(header.text_offsets[i],
                 header.text_addresses[i],
                 header.text_sizes[i],
@@ -97,7 +70,7 @@ def accept_file(li, n):
     if not valid_ep:
         return False
 
-    for i in xrange(11):
+    for i in xrange(MaxDataSection):
         if not section_sanity_check(header.data_offsets[i],
                 header.data_addresses[i],
                 header.data_sizes[i],
@@ -110,10 +83,9 @@ def accept_file(li, n):
 
     return DolFormatName
 
-def load_file(li, neflags, format):
-	if format != DolFormatName:
-		Warning("Unknown format name: '%s'" % format)
-    	        return False
+def load_file(li, neflags, fmt):
+	if fmt != DolFormatName:
+		Warning("Unknown format name: '{0}'".format(fmt))
 
         set_processor_type("PPC", SETPROC_ALL|SETPROC_FATAL)
         set_compiler_id(COMP_GNU)
@@ -123,7 +95,7 @@ def load_file(li, neflags, format):
         cvar.inf.beginEA = cvar.inf.startIP = header.entry_point
         set_selector(1, 0);
 
-        for i in xrange(7):
+        for i in xrange(MaxCodeSection):
 
             if header.text_sizes[i] == 0:
                 continue
@@ -138,7 +110,7 @@ def load_file(li, neflags, format):
             SetSegmentType(addr, SEG_CODE)
             li.file2base(off, addr, size, 0)
 
-        for i in xrange(11):
+        for i in xrange(MaxCodeSection):
 
             if header.data_sizes[i] == 0:
                 continue
