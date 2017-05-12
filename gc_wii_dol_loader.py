@@ -50,7 +50,6 @@ def accept_file(li, n):
     file_len = li.tell()
     if file_len < DolHeaderSize:
         return False
-    li.seek(0)
 
     header = get_dol_header(li)
 
@@ -95,6 +94,8 @@ def load_file(li, neflags, fmt):
         cvar.inf.beginEA = cvar.inf.startIP = header.entry_point
         set_selector(1, 0);
 
+        flags = ADDSEG_NOTRUNC|ADDSEG_OR_DIE
+
         for i in xrange(MaxCodeSection):
 
             if header.text_sizes[i] == 0:
@@ -104,13 +105,12 @@ def load_file(li, neflags, fmt):
             size = header.text_sizes[i]
             off = header.text_offsets[i]
 
-            AddSegEx(addr, addr + size, 0, 1, saRelPara, scPub, ADDSEG_NOTRUNC|ADDSEG_OR_DIE)
-
+            AddSegEx(addr, addr + size, 0, 1, saRelPara, scPub, flags)
             RenameSeg(addr, "Code{0}".format(i))
             SetSegmentType(addr, SEG_CODE)
-            li.file2base(off, addr, size, 0)
+            li.file2base(off, addr, addr + size, 0)
 
-        for i in xrange(MaxCodeSection):
+        for i in xrange(MaxDataSection):
 
             if header.data_sizes[i] == 0:
                 continue
@@ -119,16 +119,16 @@ def load_file(li, neflags, fmt):
             size = header.data_sizes[i]
             off = header.data_offsets[i]
 
-            AddSegEx(addr, addr + size, 0, 1, saRelPara, scPub, ADDSEG_NOTRUNC|ADDSEG_OR_DIE)
-
+            AddSegEx(addr, addr + size, 0, 1, saRelPara, scPub, flags)
             RenameSeg(addr, "Data{0}".format(i))
             SetSegmentType(addr, SEG_DATA)
-            li.file2base(off, addr, size, 0)
+            li.file2base(off, addr, addr + size, 0)
 
         if header.bss_address:
             addr = header.bss_address
             size = header.bss_size
-            AddSegEx(addr, addr + size, 0, 1, saRelPara, scPub, ADDSEG_NOTRUNC|ADDSEG_OR_DIE)
+
+            AddSegEx(addr, addr + size, 0, 1, saRelPara, scPub, flags)
             RenameSeg(addr, "BSS")
             SetSegmentType(addr, SEG_BSS)
 
