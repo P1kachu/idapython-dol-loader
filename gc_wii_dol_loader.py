@@ -5,7 +5,7 @@ from struct import unpack as up
 from ctypes import *
 
 DolHeaderSize = 0x100
-DolFormatName = "Nintendo GC/WII DOL"
+DolFormatName = "Nintendo GC/Wii DOL"
 MaxCodeSection = 7
 MaxDataSection = 11
 
@@ -104,7 +104,7 @@ def load_file(li, neflags, fmt):
             size = header.text_sizes[i]
             off = header.text_offsets[i]
 
-            AddSeg(addr, addr + size, 0, 1, saRelPara, scPub)
+            AddSegEx(addr, addr + size, 0, 1, saRelPara, scPub, ADDSEG_NOTRUNC|ADDSEG_OR_DIE)
 
             RenameSeg(addr, "Code{0}".format(i))
             SetSegmentType(addr, SEG_CODE)
@@ -119,7 +119,7 @@ def load_file(li, neflags, fmt):
             size = header.data_sizes[i]
             off = header.data_offsets[i]
 
-            AddSeg(addr, addr + size, 0, 1, saRelPara, scPub)
+            AddSegEx(addr, addr + size, 0, 1, saRelPara, scPub, ADDSEG_NOTRUNC|ADDSEG_OR_DIE)
 
             RenameSeg(addr, "Data{0}".format(i))
             SetSegmentType(addr, SEG_DATA)
@@ -128,7 +128,7 @@ def load_file(li, neflags, fmt):
         if header.bss_address:
             addr = header.bss_address
             size = header.bss_size
-            AddSeg(addr, addr + size, 0, 1, saRelPara, scPub)
+            AddSegEx(addr, addr + size, 0, 1, saRelPara, scPub, ADDSEG_NOTRUNC|ADDSEG_OR_DIE)
             RenameSeg(addr, "BSS")
             SetSegmentType(addr, SEG_BSS)
 
