@@ -26,7 +26,8 @@ def get_dol_header(li):
     li.seek(0)
     header = DolHeader()
     string = li.read(DolHeaderSize)
-    memmove(addressof(header), string, DolHeaderSize)
+    fit = min(len(string), sizeof(header))
+    memmove(addressof(header), string, fit)
     return header
 
 def section_sanity_check(offset, addr, size, file_len):
